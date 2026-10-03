@@ -34,4 +34,20 @@ describe('tile rendering during animated zoom', function () {
 			expect(checked).to.be(true);
 		});
 	});
+
+	[13, 11, 13.4].forEach(function (target) {
+		it('requests the whole destination viewport when zooming out to ' + target, function () {
+			map.setView([0, 0], 14);
+			var grid = L.gridLayer().addTo(map);
+			var checked = false;
+			map.on('zoomanim', function (event) {
+				var scale = map.getZoomScale(target, grid._tileZoom);
+				expect(grid._getTiledPixelBounds(event.center).getSize()).to.near(map.getSize().divideBy(scale));
+				checked = true;
+			});
+
+			map._animateZoom(map.getCenter(), target, true);
+			expect(checked).to.be(true);
+		});
+	});
 });
