@@ -645,7 +645,7 @@ export var GridLayer = Layer.extend({
 	_update: function (center) {
 		var map = this._map;
 		if (!map) { return; }
-		var zoom = this._clampZoom(map.getZoom());
+		var zoom = this._clampZoom(map._animatingZoom ? map._animateToZoom : map.getZoom());
 
 		if (center === undefined) { center = map.getCenter(); }
 		if (this._tileZoom === undefined) { return; }	// if out of minzoom/maxzoom
