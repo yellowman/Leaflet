@@ -176,6 +176,7 @@ export class GridLayer extends Layer {
 		map._removeZoomLimit(this);
 		this._container = null;
 		this._tileZoom = undefined;
+		this._previousTileZoom = undefined;
 		clearTimeout(this._pruneTimeout);
 	}
 
@@ -437,12 +438,16 @@ export class GridLayer extends Layer {
 			}
 		}
 
+		this._retainPreviousTiles();
+
 		for (const [key, tile] of Object.entries(this._tiles)) {
 			if (!tile.retain) {
 				this._removeTile(key);
 			}
 		}
 	}
+
+	_retainPreviousTiles() {}
 
 	_removeTilesAtZoom(zoom) {
 		for (const [key, tile] of Object.entries(this._tiles)) {
@@ -467,6 +472,7 @@ export class GridLayer extends Layer {
 		this._removeAllTiles();
 
 		this._tileZoom = undefined;
+		this._previousTileZoom = undefined;
 	}
 
 	_retainParent(x, y, z, minZoom) {
@@ -555,6 +561,10 @@ export class GridLayer extends Layer {
 		const tileZoomChanged = this.options.updateWhenZooming && (tileZoom !== this._tileZoom);
 
 		if (!noUpdate || tileZoomChanged) {
+
+			if (tileZoom !== this._tileZoom) {
+				this._previousTileZoom = this._tileZoom;
+			}
 
 			this._tileZoom = tileZoom;
 
