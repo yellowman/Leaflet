@@ -9,6 +9,25 @@ table.plugins td > p {
 	margin-top: 0;
 	margin-bottom: 0;
 }
+.repo-data{
+	margin-top: 10px;
+	white-space: nowrap;
+}
+
+.repo-data > img {
+	height: 20px;
+	max-width: none;
+	margin-right: 5px;
+}
+.compatible {
+	padding: 3px;
+}
+table.plugins th {
+	cursor: pointer;
+}
+table.plugins th:hover {
+	background: #dbdbdb;
+}
 </style>
 
 ## Leaflet Plugins database
@@ -390,3 +409,107 @@ Leaflet keeps it simple. If you can think of a feature that is not required by a
 There are no hard requirements on how to create your own plugin, but all developers are encouraged to read the recommendations in the [plugin guide](https://github.com/Leaflet/Leaflet/blob/main/PLUGIN-GUIDE.md).
 
 Once your plugin is ready, you can submit it: just send a pull request with a new plugin file in [/docs/_plugins/](https://github.com/Leaflet/Leaflet/tree/main/docs/_plugins)to our GitHub repository.
+
+<script>
+function loadRepoData() {
+	const regexpGithubCom = /^https?:\/\/(?:www\.)?github\.com\/([\w\d-_.]+)\/([\w\d-_.]+)\/?/;
+	const regexpGithubIO = /^https?:\/\/([\w\d-_.]+)\.github\.io\/([\w\d-_.]+)\/?/;
+	const regexpGitlabCom = /^https?:\/\/(?:www\.)?gitlab\.com\/([\w\d-_.]+)\/([\w\d-_.]+)\/?/;
+
+	const rows = document.querySelectorAll('table.plugins tr');
+	rows.forEach((row) => {
+		try {
+			const repoData = row.querySelector('.repo-data');
+			if (repoData) {
+				const link = row.querySelector('.plugin-repo-url').href;
+				let badges = [];
+
+				const matchGithubCom = link.match(regexpGithubCom);
+				if (matchGithubCom) {
+					const repo = `${matchGithubCom[1]}/${matchGithubCom[2]}`;
+					badges = [
+						`https://badgen.net/github/stars/${repo}`,
+						`https://badgen.net/github/last-commit/${repo}`
+					];
+				}
+
+				const matchGithubIO = link.match(regexpGithubIO);
+				if (matchGithubIO) {
+					const repo = `${matchGithubIO[1]}/${matchGithubIO[2]}`;
+					badges = [
+						`https://badgen.net/github/stars/${repo}`,
+						`https://badgen.net/github/last-commit/${repo}`
+					];
+				}
+
+				const matchGitlabCom = link.match(regexpGitlabCom);
+				if (matchGitlabCom) {
+					const repo = `${matchGitlabCom[1]}/${matchGitlabCom[2]}`;
+					badges = [
+						`https://badgen.net/gitlab/stars/${repo}`,
+						`https://badgen.net/gitlab/last-commit/${repo}`
+					];
+				}
+
+				badges.forEach((badge) => {
+					repoData.innerHTML += `<img src="${badge}" alt=""/>`;
+				});
+			}
+		} catch (e) {
+			console.error(e);
+		}
+	});
+}
+loadRepoData();
+
+document.querySelectorAll("table.plugins th").forEach(th => {
+  th.addEventListener("click", () => {
+    sortTable(th);
+  });
+});
+
+function sortTable(header) {
+  const table = header.closest("table");
+  const tbody = table.tBodies[0];
+  const rows = Array.from(tbody.rows);
+
+  // Column index to sort by
+  const columnIndex = Array.from(header.parentNode.children).indexOf(header);
+
+  // Skip the first row (headers)
+  const fixedRow = rows.shift(); // Remove and keep the first row
+
+  let dir = header.dataset.sortDir === "asc" ? "desc" : "asc";
+  header.dataset.sortDir = dir;
+
+  rows.sort((a, b) => {
+    let aText = a.cells[columnIndex].textContent.trim();
+    let bText = b.cells[columnIndex].textContent.trim();
+
+	const aEmpty = aText === "";
+	const bEmpty = bText === "";
+
+	if (aEmpty && !bEmpty) return dir === "asc" ? 1 : -1;
+	if (!aEmpty && bEmpty) return dir === "asc" ? -1 : 1;
+	if (aEmpty && bEmpty) return 0;
+	
+    // Try to convert to numbers if possible
+    let aVal = isNaN(aText) ? aText.toLowerCase() : parseFloat(aText);
+    let bVal = isNaN(bText) ? bText.toLowerCase() : parseFloat(bText);
+
+    if (aVal > bVal) {
+      return dir === "asc" ? 1 : -1;
+    }
+    if (aVal < bVal) {
+      return dir === "asc" ? -1 : 1;
+    }
+    return 0;
+  });
+
+  // Clear tbody and re-add the fixed row and sorted rows
+  tbody.innerHTML = "";
+  tbody.appendChild(fixedRow);
+  rows.forEach(row => tbody.appendChild(row));
+}
+
+</script>

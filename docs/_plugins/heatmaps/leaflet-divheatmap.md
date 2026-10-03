@@ -7,6 +7,7 @@ author-url: https://github.com/dpiccone
 demo: 
 compatible-v0:
 compatible-v1: true
+compatible-v2: false
 ---
 
-Lightweight and versatile heatmap layer based on CSS3 and divIcons
+Lightweight and versatile heatmap layer based on CSS and divIcons
