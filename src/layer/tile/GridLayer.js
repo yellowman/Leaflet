@@ -172,6 +172,7 @@ export var GridLayer = Layer.extend({
 		map._removeZoomLimit(this);
 		this._container = null;
 		this._tileZoom = undefined;
+		this._previousTileZoom = undefined;
 	},
 
 	// @method bringToFront: this
@@ -441,12 +442,16 @@ export var GridLayer = Layer.extend({
 			}
 		}
 
+		this._retainPreviousTiles();
+
 		for (key in this._tiles) {
 			if (!this._tiles[key].retain) {
 				this._removeTile(key);
 			}
 		}
 	},
+
+	_retainPreviousTiles: Util.falseFn,
 
 	_removeTilesAtZoom: function (zoom) {
 		for (var key in this._tiles) {
@@ -472,6 +477,7 @@ export var GridLayer = Layer.extend({
 		this._removeAllTiles();
 
 		this._tileZoom = undefined;
+		this._previousTileZoom = undefined;
 	},
 
 	_retainParent: function (x, y, z, minZoom) {
@@ -560,6 +566,10 @@ export var GridLayer = Layer.extend({
 		var tileZoomChanged = this.options.updateWhenZooming && (tileZoom !== this._tileZoom);
 
 		if (!noUpdate || tileZoomChanged) {
+
+			if (tileZoom !== this._tileZoom) {
+				this._previousTileZoom = this._tileZoom;
+			}
 
 			this._tileZoom = tileZoom;
 
