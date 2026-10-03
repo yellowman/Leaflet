@@ -279,6 +279,11 @@ export class TileLayer extends GridLayer {
 	}
 
 	_retainPreviousTiles() {
+		for (const tile of Object.values(this._tiles)) {
+			if (tile.cached) {
+				tile.el.style.visibility = tile.retain ? tile.cachedVisibility : 'hidden';
+			}
+		}
 		if (!this.options.keepPreviousTiles || this._previousTileZoom === undefined) { return; }
 
 		const center = this._map.project(this._map.getCenter(), this._previousTileZoom)
@@ -288,6 +293,13 @@ export class TileLayer extends GridLayer {
 
 		tiles.sort((a, b) => a.coords.distanceTo(center) - b.coords.distanceTo(center));
 		for (const tile of tiles.slice(0, Math.max(0, this.options.keepPreviousTiles))) {
+			if (!tile.retain) {
+				if (!tile.cached) {
+					tile.cached = true;
+					tile.cachedVisibility = tile.el.style.visibility;
+				}
+				tile.el.style.visibility = 'hidden';
+			}
 			tile.retain = true;
 		}
 	}

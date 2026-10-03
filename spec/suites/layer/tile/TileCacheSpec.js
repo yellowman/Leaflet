@@ -50,6 +50,16 @@ describe('previous zoom image tiles', () => {
 		return change(layer, () => { layer.addTo(map); });
 	}
 
+	function visibleImagesAt(layer) {
+		const bounds = container.getBoundingClientRect();
+		const x = bounds.left + 37, y = bounds.top + 53;
+		return Object.values(layer._tiles).filter((tile) => {
+			const rect = tile.el.getBoundingClientRect();
+			return getComputedStyle(tile.el).visibility === 'visible' &&
+				rect.left <= x && rect.right > x && rect.top <= y && rect.bottom > y;
+		});
+	}
+
 	function olderTiles(layer) {
 		return Object.keys(layer._tiles).map(key => layer._tiles[key])
 			.filter(tile => tile.coords.z !== layer._tileZoom);
@@ -170,4 +180,37 @@ describe('previous zoom image tiles', () => {
 			return atZoom(layer, 14);
 		}).then(() => { expect(olderTiles(layer).length).to.equal(0); });
 	});
+	it('does not composite retained images behind transparent current tiles', () => {
+		const transparent = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="blue" fill-opacity="0.5"/></svg>')}`;
+		let layer;
+		return addLayer({}, transparent).then((loaded) => {
+			layer = loaded;
+			expect(visibleImagesAt(layer).length).to.equal(1);
+			return atZoom(layer, 14);
+		}).then(() => {
+			expect(olderTiles(layer).length > 0).to.equal(true);
+			expect(visibleImagesAt(layer).length).to.equal(1);
+			return atZoom(layer, 11);
+		}).then(() => {
+			expect(visibleImagesAt(layer).length).to.equal(1);
+			expect(visibleImagesAt(layer)[0].coords.z).to.equal(11);
+		});
+	});
+
+	it('shows cached parent images only while current tiles need a fallback', () => {
+		let layer;
+		return addLayer().then((loaded) => {
+			layer = loaded;
+			return atZoom(layer, 14);
+		}).then(() => {
+			expect(visibleImagesAt(layer).filter(tile => tile.coords.z === 11).length).to.equal(0);
+			Object.values(layer._tiles).filter(tile => tile.current).forEach((tile) => { tile.active = false; });
+			layer._pruneTiles();
+			expect(visibleImagesAt(layer).filter(tile => tile.coords.z === 11).length).to.equal(1);
+			Object.values(layer._tiles).filter(tile => tile.current).forEach((tile) => { tile.active = true; });
+			layer._pruneTiles();
+			expect(visibleImagesAt(layer).filter(tile => tile.coords.z === 11).length).to.equal(0);
+		});
+	});
+
 });
