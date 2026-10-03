@@ -529,6 +529,7 @@ describe('GridLayer', () => {
 			clock = createClock();
 
 			grid = new GridLayer({
+				updateWhenIdle: true,
 				attribution: 'Grid Layer',
 				tileSize: new Point(256, 256)
 			});
