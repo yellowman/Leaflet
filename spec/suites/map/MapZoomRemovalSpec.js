@@ -16,12 +16,14 @@ describe('removing a map during zoom', function () {
 
 	it('cancels the completion timer and ignores late transition callbacks', function () {
 		var ended = 0;
+		var completed = sinon.spy(map, '_onZoomTransitionEnd');
 		map.on('zoomend', function () { ended++; });
 		map._animateZoom(map.getCenter(), 14, true);
 		var removed = map;
 		map.remove();
 		map = null;
 		clock.tick(300);
+		expect(completed.callCount).to.equal(0);
 		removed._onZoomTransitionEnd();
 		expect(ended).to.equal(0);
 	});
