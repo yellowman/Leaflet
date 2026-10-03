@@ -268,6 +268,12 @@ export var TileLayer = GridLayer.extend({
 	},
 
 	_retainPreviousTiles: function () {
+		for (var cachedKey in this._tiles) {
+			var previous = this._tiles[cachedKey];
+			if (previous.cached) {
+				previous.el.style.visibility = previous.retain ? previous.cachedVisibility : 'hidden';
+			}
+		}
 		if (!this.options.keepPreviousTiles || this._previousTileZoom === undefined) { return; }
 
 		var center = this._map.project(this._map.getCenter(), this._previousTileZoom)
@@ -285,7 +291,15 @@ export var TileLayer = GridLayer.extend({
 			return a.coords.distanceTo(center) - b.coords.distanceTo(center);
 		});
 		for (var i = 0; i < Math.min(tiles.length, Math.max(0, Math.floor(this.options.keepPreviousTiles))); i++) {
-			tiles[i].retain = true;
+			var cachedTile = tiles[i];
+			if (!cachedTile.retain) {
+				if (!cachedTile.cached) {
+					cachedTile.cached = true;
+					cachedTile.cachedVisibility = cachedTile.el.style.visibility;
+				}
+				cachedTile.el.style.visibility = 'hidden';
+			}
+			cachedTile.retain = true;
 		}
 	},
 

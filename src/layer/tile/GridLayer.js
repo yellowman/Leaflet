@@ -695,6 +695,11 @@ export var GridLayer = Layer.extend({
 
 				var tile = this._tiles[this._tileCoordsToKey(coords)];
 				if (tile) {
+					if (tile.cached) {
+						tile.el.style.visibility = tile.cachedVisibility;
+						delete tile.cached;
+						delete tile.cachedVisibility;
+					}
 					tile.current = true;
 				} else {
 					queue.push(coords);

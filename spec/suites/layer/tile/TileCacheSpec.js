@@ -47,6 +47,16 @@ describe('previous zoom image tiles', function () {
 		return change(layer, function () { layer.addTo(map); });
 	}
 
+	function visibleImagesAt(layer) {
+		var bounds = container.getBoundingClientRect();
+		var x = bounds.left + 37, y = bounds.top + 53;
+		return Object.keys(layer._tiles).map(function (key) { return layer._tiles[key]; }).filter(function (tile) {
+			var rect = tile.el.getBoundingClientRect();
+			return getComputedStyle(tile.el).visibility === 'visible' &&
+				rect.left <= x && rect.right > x && rect.top <= y && rect.bottom > y;
+		});
+	}
+
 	function olderTiles(layer) {
 		return Object.keys(layer._tiles).map(function (key) { return layer._tiles[key]; })
 			.filter(function (tile) { return tile.coords.z !== layer._tileZoom; });
@@ -167,4 +177,37 @@ describe('previous zoom image tiles', function () {
 			return atZoom(layer, 14);
 		}).then(function () { expect(olderTiles(layer).length).to.equal(0); });
 	});
+	it('does not composite retained images behind transparent current tiles', function () {
+		var transparent = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="blue" fill-opacity="0.5"/></svg>');
+		var layer;
+		return addLayer({}, transparent).then(function (loaded) {
+			layer = loaded;
+			expect(visibleImagesAt(layer).length).to.equal(1);
+			return atZoom(layer, 14);
+		}).then(function () {
+			expect(olderTiles(layer).length > 0).to.equal(true);
+			expect(visibleImagesAt(layer).length).to.equal(1);
+			return atZoom(layer, 11);
+		}).then(function () {
+			expect(visibleImagesAt(layer).length).to.equal(1);
+			expect(visibleImagesAt(layer)[0].coords.z).to.equal(11);
+		});
+	});
+
+	it('shows cached parent images only while current tiles need a fallback', function () {
+		var layer;
+		return addLayer().then(function (loaded) {
+			layer = loaded;
+			return atZoom(layer, 14);
+		}).then(function () {
+			expect(visibleImagesAt(layer).filter(function (tile) { return tile.coords.z === 11; }).length).to.equal(0);
+			Object.keys(layer._tiles).map(function (key) { return layer._tiles[key]; }).filter(function (tile) { return tile.current; }).forEach(function (tile) { tile.active = false; });
+			layer._pruneTiles();
+			expect(visibleImagesAt(layer).filter(function (tile) { return tile.coords.z === 11; }).length).to.equal(1);
+			Object.keys(layer._tiles).map(function (key) { return layer._tiles[key]; }).filter(function (tile) { return tile.current; }).forEach(function (tile) { tile.active = true; });
+			layer._pruneTiles();
+			expect(visibleImagesAt(layer).filter(function (tile) { return tile.coords.z === 11; }).length).to.equal(0);
+		});
+	});
+
 });
