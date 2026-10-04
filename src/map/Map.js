@@ -183,6 +183,12 @@ export var Map = Evented.extend({
 
 		this._stop();
 
+		// CSS zoom transitions must finish before another view can be applied.
+		if (this._animatingZoom) {
+			this._pendingView = {center: center, zoom: zoom, options: options};
+			return this;
+		}
+
 		if (this._loaded && !options.reset && options !== true) {
 
 			if (options.animate !== undefined) {
@@ -1257,6 +1263,7 @@ export var Map = Evented.extend({
 	},
 
 	_stop: function () {
+		delete this._pendingView;
 		Util.cancelAnimFrame(this._flyToFrame);
 		Util.cancelAnimFrame(this._zoomAnimFrame);
 		if (this._panAnim) {
@@ -1737,6 +1744,13 @@ export var Map = Evented.extend({
 		this.fire('move');
 
 		this._moveEnd(true);
+
+		// A view requested by an end listener takes precedence over an older one.
+		var pending = this._pendingView;
+		if (pending) {
+			delete this._pendingView;
+			this.setView(pending.center, pending.zoom, pending.options);
+		}
 	}
 });
 
